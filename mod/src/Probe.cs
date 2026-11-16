@@ -38,6 +38,7 @@ public static class Probe
     public static readonly PzaStrings Strings = new([
         ("title", "PZA'S UI PROBE"),
         ("tab.widgets", "WIDGETS"),
+        ("tab.faces", "FACES"),
         ("tab.help", "HELP"),
         ("intro", "A real Kenshi window from a code mod, on PZA's Meitou UI. Drag it by its title, press Escape to close it, type in the box, pick a line, move the slider. It reopens where you left it, also after a restart."),
         ("tick.on", "Tick box: ON"),
@@ -46,6 +47,9 @@ public static class Probe
         ("edit.empty", "Edit box: type here"),
         ("edit.some", "Edit box: \"{1}\" ({2} letters)"),
         ("help", "Help as a tab of the same window: the PZA UI rules' help page, wrapped by the game. A second paragraph checks that long text wraps inside the window and does not run past its frame at any resolution."),
+        ("faces.none", "Select up to four characters (yours or anyone's): their own faces show here, drawn live by Meitou's portrait renderer."),
+        ("faces.some", "{1} selected: the first four faces below. A recruit must show their own face, not a generic one."),
+        ("faces.off", "No faces: this Meitou lacks the portrait members (see the log)."),
         ("status.none", "Not pressed yet"),
         ("status.some", "Pressed {1} time(s)"),
         ("press", "PRESS"),
@@ -63,6 +67,9 @@ public static class Probe
     static readonly string[] s_items = ["Dust bandit", "Hungry bandit", "Holy Nation outlaw", "Shek warrior", "Hive soldier drone", "Skeleton"];
     static int s_eventLogs;
 
+    /// <summary>Whose faces the Faces tab shows: the player's selection (the offline check sets its own).</summary>
+    public static Func<IReadOnlyList<global::Meitou.Simulation.CharacterId>> FacesFor = PzaUi.SelectedCharacters;
+
     public static string Speed(int pos) => (0.10 + 0.05 * pos).ToString("0.00", CultureInfo.InvariantCulture);
 
     public static string LayoutXml() => L.Doc(L.Window("Root", "PZA'S UI PROBE", 0.32, 0.18, 0.36, 0.62,
@@ -75,6 +82,12 @@ public static class Probe
                 L.Text("lbEdit", 0.03, 0.43, 0.94, 0.06),
                 L.Edit("Edit", 0.03, 0.50, 0.94, 0.07, maxLength: 40),
                 L.List("List", 0.03, 0.60, 0.94, 0.37)]),
+            ("TabFaces", [
+                L.Text("lbFaces", 0.03, 0.03, 0.94, 0.12, wrap: true),
+                L.Portrait("Face0", 0.03, 0.18, 0.22, 0.27),
+                L.Portrait("Face1", 0.27, 0.18, 0.22, 0.27),
+                L.Portrait("Face2", 0.51, 0.18, 0.22, 0.27),
+                L.Portrait("Face3", 0.75, 0.18, 0.22, 0.27)]),
             L.HelpPage("TabHelp", "lbHelp")),
         L.Text("lbStatus", 0.03, 0.875, 0.5, 0.05),
         L.Button("PressButton", 0.53, 0.87, 0.21, 0.07),
@@ -90,7 +103,15 @@ public static class Probe
                 PzaWindow.Enable(b, "Tick", "PressButton", "CloseButton");
                 b.Text["Root"] = S.T("title");
                 PzaWindow.TabText(b, "Tabs", 0, S.T("tab.widgets"));
-                PzaWindow.TabText(b, "Tabs", 1, S.T("tab.help"));
+                PzaWindow.TabText(b, "Tabs", 1, S.T("tab.faces"));
+                PzaWindow.TabText(b, "Tabs", 2, S.T("tab.help"));
+                var faces = FacesFor();
+                b.Text["lbFaces"] = !PzaPortrait.Available ? S.T("faces.off") : faces.Count == 0 ? S.T("faces.none") : S.TF("faces.some", faces.Count.ToString(CultureInfo.InvariantCulture));
+                for (int i = 0; i < 4; i++)
+                {
+                    if (i < faces.Count) PzaPortrait.Face(b, "Face" + i.ToString(CultureInfo.InvariantCulture), faces[i]);
+                    else PzaPortrait.Clear(b, "Face" + i.ToString(CultureInfo.InvariantCulture));
+                }
                 b.Text["lbIntro"] = S.T("intro");
                 b.Text["lbTick"] = S.T(Tick ? "tick.on" : "tick.off");
                 PzaWindow.Tick(b, "Tick", Tick);

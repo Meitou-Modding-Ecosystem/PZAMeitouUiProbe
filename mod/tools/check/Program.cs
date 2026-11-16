@@ -1,4 +1,4 @@
-// PZA's UI Probe for Meitou 0.2.0: offline check of the probe AND of PZA's Meitou UI (the library compiled into it). Author PZA, GPLv3 or later.
+// PZA's UI Probe for Meitou 0.3.0: offline check of the probe AND of PZA's Meitou UI (the library compiled into it). Author PZA, GPLv3 or later.
 // Never shipped; it does not start the game; it reads the Kenshi install.
 // 1. Meitou 0.20.1's manifest rules; the settings page accepts the probe's settings.
 // 2. PzaUi.Install against the real MeitouClient.dll: every member resolves, every patch applies (the window patches and the pointer calls).
@@ -7,7 +7,9 @@
 //    title-bar drag saved as a fraction of the screen, the place restored on a NEW host (a restart) at another resolution, Escape.
 // 4. PzaTinyButton through Meitou's real UiHost: laid out in the top-right corner, a click (press + release, no drag) toggles the window, a drag
 //    moves it and saves the place without toggling, the wheel steps its opacity to the 0.35 floor and is ours, the + opens the window.
-// 5. PzaStrings: a translation file with a lost placeholder and a bad escape is refused line by line.
+// 5. PzaPortrait: the GatherPortraitKeys patch applies to the real GameHost; the Faces tab binds the atlas cells; the requests: ours added once
+//    per frame, moved off a cell another request takes, dropped when no longer bound. (The live drawing needs the game: in-game test.)
+// 6. PzaStrings: a translation file with a lost placeholder and a bad escape is refused line by line.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,7 +19,9 @@ using System.Reflection;
 using Meitou.Content;
 using Meitou.Data.Ui;
 using Meitou.Game.Host.Input;
+using Meitou.Game.Rendering.Characters;
 using Meitou.Game.Ui;
+using Meitou.Simulation;
 using PZA.MeitouUi;
 using PZA.UiProbe.Meitou;
 
@@ -36,6 +40,7 @@ static class P
         Expect(PzaUi.Install(new HarmonyLib.Harmony("pza.uiprobe.check")), "PzaUi.Install: every member resolves and every patch applies");
         Window(kenshi);
         Tiny();
+        Faces(kenshi);
         Strings();
         Console.WriteLine("-- log lines:");
         foreach (var l in lines) Console.WriteLine("  " + l);
@@ -125,7 +130,7 @@ static class P
         foreach (char ch in "Kenshi") host.TextInput(ch);
         Expect(Probe.Edited == "Kenshi" && PzaUi.Host!.HasKeyboardFocus, "typing reaches the mod; the box has the keyboard (PzaUi.Typing)");
         host.Blur();
-        Click("Tabs@tab1");
+        Click("Tabs@tab2");
         Expect(Arrange().Any(x => x.Name == "lbHelp") && !Arrange().Any(x => x.Name == "Tick"), "PzaLayout.HelpPage: the Help tab shows its page");
         Click("Tabs@tab0");
 
@@ -195,6 +200,54 @@ static class P
         Expect(ui.Dispatch(p2), "the + dispatches");
         PzaUi.Frame(host, 3840, 2160);
         Expect(Probe.Window.IsOpen, "the + opens the window");
+    }
+
+    static void Faces(string kenshi)
+    {
+        Console.WriteLine("== PzaPortrait (character faces)");
+        Expect(PzaPortrait.Available, "faces available: GameHost.GatherPortraitKeys, PortraitKey, CharacterRenderer.PortraitRequests and PortraitBar resolve; the prefix applies");
+        PzaPortrait.Reset();
+        CharacterId a = new(3, 1), b2 = new(7, 2);
+        Probe.FacesFor = () => [a, b2];
+        var host = new MyGuiScreenHost(Resources(kenshi));
+        const int W = 1920, H = 1080;
+        PzaUi.Frame(host, W, H);
+        Probe.Window.Open(); PzaUi.Frame(host, W, H);
+        IReadOnlyList<UiControl> Arrange() => host.Arrange(W, H, id => Bind(host, id)).Single(f => f.Id == Probe.Id).Controls;
+        var tab = Arrange().First(x => x.Name == "Tabs@tab1");
+        host.PointerDown(new Vector2(tab.Bounds.X + tab.Bounds.Width / 2, tab.Bounds.Y + tab.Bounds.Height / 2)); host.PointerUp(); PzaUi.Frame(host, W, H);
+        var c = Arrange();
+        UiControl? F(int i) => c.FirstOrDefault(x => x.Name == "Face" + i);
+        Expect(c.Any(x => x.Name == "lbFaces") && F(0) is not null && F(3) is not null, "the Faces tab shows its text and four portrait frames");
+        Expect(F(0)?.Bounds is { Width: > 40 } r0 && Math.Abs(r0.Width - r0.Height) <= 2, $"a portrait frame is square on screen ({F(0)?.Bounds.Width:0}x{F(0)?.Bounds.Height:0})");
+        Expect(F(0)?.Properties.GetValueOrDefault("ImageTexture") == "meitou:portraits" && F(0)?.Properties.GetValueOrDefault("ImageFlipV") == "true"
+            && F(0)?.Properties.GetValueOrDefault("ImageRect") == "3840 768 128 128", $"face 0 shows atlas cell 63 ({F(0)?.Properties.GetValueOrDefault("ImageRect")})");
+        Expect(F(1)?.Properties.GetValueOrDefault("ImageRect") == "3584 768 128 128", $"face 1 shows cell 62 ({F(1)?.Properties.GetValueOrDefault("ImageRect")})");
+        Expect(F(2)?.Properties.ContainsKey("ImageTexture") == false, "an empty frame shows nothing");
+        Expect(MyGuiImages.Resolve(Resources(kenshi), F(0)!.Properties) is { Texture: "meitou:portraits" } img && img.Source.Width == 128,
+            "Meitou's own image resolver reads the face's texture and rectangle");
+
+        long Key(CharacterId id) => 1000 + id.Slot;
+        uint Serial(CharacterId id) => 5;
+        var req = new List<PortraitRequest> { new(1, 0, 0), new(2, 33, 0) };
+        PzaPortrait.AddRequests(req, Key, Serial);
+        Expect(req.Count == 4 && req.Any(r => r.Key == 1003 && r.Cell == 63 && r.Serial == 5) && req.Any(r => r.Key == 1007 && r.Cell == 62),
+            "ours are added: cells 63 and 62, the game's key and serial");
+        PzaPortrait.AddRequests(req, Key, Serial);
+        Expect(req.Count == 4, "a second gather in the same frame adds nothing twice");
+        var next = new List<PortraitRequest> { new(99, 63, 0) };   // another request (a record portrait, another mod) takes cell 63
+        PzaPortrait.AddRequests(next, Key, Serial);
+        int moved = PzaPortrait.CellOf(a);
+        Expect(moved is >= 32 and < 62 && next.Count == 3 && next.Count(r => r.Cell == 63) == 1, $"a face whose cell is taken moves to a free one ({moved})");
+        c = Arrange();
+        Expect(F(0)?.Properties.GetValueOrDefault("ImageRect") is { } rr && rr.StartsWith(((moved % 16) * 256).ToString(System.Globalization.CultureInfo.InvariantCulture) + " "),
+            $"the window follows the move on its next bind ({F(0)?.Properties.GetValueOrDefault("ImageRect")})");
+        Probe.FacesFor = () => [];
+        Probe.Window.Close(); PzaUi.Frame(host, W, H);
+        for (int i = 0; i < 12; i++) PzaPortrait.AddRequests(new List<PortraitRequest>(), Key, Serial);
+        var after = new List<PortraitRequest>();
+        PzaPortrait.AddRequests(after, Key, Serial);
+        Expect(after.Count == 0 && PzaPortrait.CellOf(a) == -1, "faces no longer bound give their cells up");
     }
 
     static void Strings()

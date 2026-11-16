@@ -2,7 +2,7 @@
   // PZA's UI Probe for Meitou (author PZA, GPLv3 or later). Test mod, not on the Workshop: proves that a code mod can run a real Kenshi
   // (MyGUI) window on Meitou's own window engine (MyGuiScreenHost).
   "id": "pza.uiprobe",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "apiVersion": 2,
   "assemblies": ["PZAUiProbe.dll"],
   "entry": "PZA.UiProbe.Meitou.ProbeMod",

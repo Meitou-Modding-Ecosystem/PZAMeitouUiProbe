@@ -1,4 +1,5 @@
 // PZA's UI Probe for Meitou. Author: PZA. Licence: GPLv3 or later.
+// 0.3.0: a Faces tab (PZA's Meitou UI 0.2.0's character faces: the selected characters' own faces).
 // 0.2.0: the probe rebuilt on PZA's Meitou UI (the shared window library, ..\..\PZAMeitouUi\src, compiled in), so one in-game test proves the
 // library: its window (layout builder, bind helpers, events, the place remembered across sessions), its tiny HUD button and its string table.
 // Opened from F10 > "PZA's UI Probe: open / close", or the tiny "UI PROBE" button (top right; drag it, wheel = opacity, + opens the window).
