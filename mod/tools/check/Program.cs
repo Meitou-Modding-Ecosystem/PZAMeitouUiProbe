@@ -143,6 +143,30 @@ static class P
         Expect(Math.Abs(Probe.Settings.WindowX + 0.2) < 0.002 && Math.Abs(Probe.Settings.WindowY - 0.2) < 0.002,
             $"after the drag: place saved as a fraction of the screen ({Probe.Settings.WindowX}, {Probe.Settings.WindowY})");
 
+        // minimize (the user, 2026-11-16: "No minimize button for the UI menu thing"): Kenshi_WindowCXM's "-" and a title double click
+        var minBtn = Arrange().FirstOrDefault(x => x.Skin == "Kenshi_MinimizeButtonSkin");
+        Expect(minBtn is not null && minBtn.Action == PzaWindow.MinimizeAction && minBtn.Enabled, $"the window has Kenshi's minimize button, bound to our action ({minBtn?.Action})");
+        long mins = Counters.Get("minimized");
+        Click(minBtn!.Name);
+        Expect(!host.IsOpen(Probe.Id) && Counters.Get("minimized") == mins + 1, "the - minimizes it (closed, Minimized called)");
+        Probe.Window.Open(); Frame(); Arrange();   // the game lays the screens out every frame; the check does it here
+        var hdr = host.LastFrame.First(f => f.Id == Probe.Id).Controls.First(x => x.Skin == "Kenshi_GenericWindowHeaderSkin").Bounds;
+        var titleAt = new Vector2(hdr.X + hdr.Width * 0.3f, hdr.Y + hdr.Height / 2);
+        System.Threading.Thread.Sleep(450);
+        PzaUi.PointerDown(MouseButton.Left, titleAt); Frame(); Arrange();
+        Expect(host.IsOpen(Probe.Id), "one press on the title: still open (a drag starts this way)");
+        System.Threading.Thread.Sleep(450);
+        PzaUi.PointerDown(MouseButton.Left, titleAt); Frame(); Arrange();
+        Expect(host.IsOpen(Probe.Id), "two slow presses: still open");
+        PzaUi.PointerDown(MouseButton.Left, titleAt); Frame();
+        Expect(!host.IsOpen(Probe.Id) && Counters.Get("minimized") == mins + 2, "a double click on the title minimizes it");
+        Probe.Window.Open(); Frame();
+        var closeBtn = Arrange().First(x => x.Skin == "Kenshi_CloseButtonSkin");
+        System.Threading.Thread.Sleep(450);
+        var cb = new Vector2(closeBtn.Bounds.X + 5, closeBtn.Bounds.Y + 5);
+        PzaUi.PointerDown(MouseButton.Left, cb); PzaUi.PointerDown(MouseButton.Left, cb); Frame();
+        Expect(host.IsOpen(Probe.Id), "two presses on the header's close button are not a title double click");
+
         Click("CloseButton");
         Expect(!host.IsOpen(Probe.Id), "CLOSE closes it (through PzaWindow.Close)");
 
@@ -179,6 +203,9 @@ static class P
         t.PointerDown(L, mid); t.PointerUp(L, mid + new Vector2(2, 0));
         PzaUi.Frame(host, 3840, 2160);
         Expect(Probe.Window.IsOpen != wasOpen, "a click (no drag) toggles the window");
+        Expect(!Arrange().Any(x => x.Caption == "UI PROBE"), "while the window is open the tiny button is hidden (Visible = !IsOpen)");
+        Probe.Window.Close(); PzaUi.Frame(host, 3840, 2160);
+        Expect(Arrange().Any(x => x.Caption == "UI PROBE"), "closed again: the tiny button is back");
 
         int clicks = (int)Counters.Get("tiny.click");
         t.PointerDown(L, mid); t.PointerMove(mid + new Vector2(-600, 400)); t.PointerUp(L, mid + new Vector2(-600, 400));

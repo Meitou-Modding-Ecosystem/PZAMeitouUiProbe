@@ -72,7 +72,7 @@ public static class Probe
 
     public static string Speed(int pos) => (0.10 + 0.05 * pos).ToString("0.00", CultureInfo.InvariantCulture);
 
-    public static string LayoutXml() => L.Doc(L.Window("Root", "PZA'S UI PROBE", 0.32, 0.18, 0.36, 0.62,
+    public static string LayoutXml() => L.Doc(L.WindowMin("Root", "PZA'S UI PROBE", 0.32, 0.18, 0.36, 0.62,
         L.Tabs("Tabs", 0.03, 0.02, 0.94, 0.84,
             ("TabWidgets", [
                 L.Text("lbIntro", 0.03, 0.03, 0.94, 0.12, wrap: true),
@@ -98,6 +98,8 @@ public static class Probe
         var S = Strings;
         Window = new PzaWindow(Id, LayoutXml)
         {
+            Minimizable = true,   // the "-" beside close, or a double click on the title: the tiny button takes over
+            Minimized = () => Counters.Add("minimized"),
             Bind = b =>
             {
                 PzaWindow.Enable(b, "Tick", "PressButton", "CloseButton");
@@ -139,6 +141,7 @@ public static class Probe
         Tiny = new PzaTinyButton("probe")
         {
             Caption = () => S.T("tiny"),
+            Visible = () => !Window.IsOpen,   // the PZA pattern: the full window or its tiny button
             Click = () => { Window.Toggle(); Counters.Add("tiny.click"); },
             OpenFull = () => { Window.Open(); Counters.Add("tiny.plus"); },
             LoadPlace = () => new Vector2((float)Settings.TinyX, (float)Settings.TinyY),
