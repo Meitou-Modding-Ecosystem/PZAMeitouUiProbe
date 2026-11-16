@@ -1,0 +1,14 @@
+name: CI
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  compatibility:
+    uses: TheIvoryDisaster/GutenStructure/.github/workflows/build-ui.yml@fc0507fb376b8b8ba732795c7032c9cd81464a58
