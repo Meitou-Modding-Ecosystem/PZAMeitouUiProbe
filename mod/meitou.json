@@ -6,5 +6,5 @@
   "apiVersion": 2,
   "assemblies": ["PZAUiProbe.dll"],
   "entry": "PZA.UiProbe.Meitou.ProbeMod",
-  "gameVersion": "=0.20.1"
+  "gameVersion": ">=0.20.1 <0.22.0"
 }
