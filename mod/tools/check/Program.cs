@@ -42,6 +42,7 @@ static class P
         Tiny();
         Faces(kenshi);
         Strings();
+        Fit(kenshi);
         Console.WriteLine("-- log lines:");
         foreach (var l in lines) Console.WriteLine("  " + l);
         Console.WriteLine(s_bad == 0 ? "RESULT: PASS" : $"RESULT: FAIL ({s_bad})");
@@ -275,6 +276,42 @@ static class P
         var after = new List<PortraitRequest>();
         PzaPortrait.AddRequests(after, Key, Serial);
         Expect(after.Count == 0 && PzaPortrait.CellOf(a) == -1, "faces no longer bound give their cells up");
+    }
+
+    /// <summary>PZA's Meitou UI's text-fit check (PzaFitCheck, run by every PZA Meitou mod's check): the probe window in four languages at three
+    /// screen sizes, then a planted too-long label that it must report by widget, language and text, then the fit pass cutting it at run time.</summary>
+    static void Fit(string kenshi)
+    {
+        Console.WriteLine("== text fit (PzaFitCheck): every text of the window, en / ru / zh / ja, three screen sizes");
+        var res = Resources(kenshi);
+        var probeDir = Path.GetDirectoryName(typeof(ProbeMod).Assembly.Location)!;
+        void Lang(string l) { Probe.Strings.Init(probeDir, l, "auto", "lang/{code}.txt"); }
+        Console.WriteLine("== PzaFont against FreeType (the engine Meitou draws with), four languages, three screen heights");
+        Expect(FontCalibration.Run(kenshi, Expect) == 0, "PzaFont never measures narrower than FreeType (by more than a pixel), never more than 6% wider");
+        var found = PzaFitCheck.Run(kenshi, res, Probe.Window, Bind, Lang, Probe.Strings.KeyOf);
+        Expect(found.Count == 0, $"every text fits its widget in four languages ({found.Count} overflow(s))");
+
+        Console.WriteLine("== text fit: the planted too-long label must fail, named");
+        UiBindings Planted(MyGuiScreenHost h, string id) { var b = Bind(h, id); if (id == Probe.Id) b.Text["lbStatus"] = PzaFitCheck.PlantedText; return b; }
+        var planted = PzaFitCheck.Run(kenshi, res, Probe.Window, Planted, Lang, Probe.Strings.KeyOf, s => { }, ["en", "ja"]);
+        var hit = planted.Where(o => o.Widget == "lbStatus" && o.Text == PzaFitCheck.PlantedText).ToList();
+        Expect(hit.Select(o => o.Lang).Distinct().Count() == 2 && hit.All(o => o.Why.Contains(" px wide in ")),
+            $"the planted label is reported in en and ja: {hit.FirstOrDefault()}");
+
+        Console.WriteLine("== text fit: at run time the fit pass cuts it and puts the whole text in the tooltip");
+        PzaFit.KenshiDir = kenshi; PzaFit.Lang = "en";
+        var host = new MyGuiScreenHost(res);
+        const int W = 1920, H = 1080;
+        var modBind = Probe.Window.Bind;
+        Probe.Window.Bind = b => { modBind?.Invoke(b); b.Text["lbStatus"] = PzaFitCheck.PlantedText; };   // planted inside the mod's own bind
+        PzaUi.Frame(host, W, H); Probe.Window.Open(); PzaUi.Frame(host, W, H);
+        host.Arrange(W, H, id => Bind(host, id));
+        var c = host.Arrange(W, H, id => Bind(host, id)).Single(f => f.Id == Probe.Id).Controls.First(x => x.Name == "lbStatus");
+        Probe.Window.Bind = modBind;
+        Expect(c.Caption.EndsWith("...", StringComparison.Ordinal) && c.Properties.GetValueOrDefault("tooltip_text") == PzaFitCheck.PlantedText,
+            $"cut to '{c.Caption}', tooltip holds the whole text");
+        Probe.Window.Close(); PzaUi.Frame(host, W, H);
+        PzaFit.KenshiDir = null;
     }
 
     static void Strings()

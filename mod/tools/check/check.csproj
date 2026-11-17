@@ -15,6 +15,7 @@
     <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     
   </PropertyGroup>
   <Import Project="$(MSBuildThisFileDirectory)..\..\local.props" Condition="'$(MeitouDir)' == '' And Exists('$(MSBuildThisFileDirectory)..\..\local.props')" />
@@ -22,8 +23,10 @@
     <GameRef Include="$(MeitouDir)\System*.dll;$(MeitouDir)\mscorlib.dll;$(MeitouDir)\netstandard.dll;$(MeitouDir)\Meitou.Core.dll;$(MeitouDir)\MeitouClient.dll;$(MeitouDir)\Meitou.Simulation.dll;$(MeitouDir)\Meitou.Data.dll"
              Exclude="$(MeitouDir)\*Native*.dll" />
     <Reference Include="@(GameRef)"><Private>false</Private></Reference>
+    <Reference Include="FreeTypeSharp"><HintPath>$(MeitouDir)\FreeTypeSharp.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="0Harmony"><HintPath>$(MeitouDir)\0Harmony.dll</HintPath><Private>false</Private></Reference>
     <!-- the mod itself (build.ps1 builds it first and copies the staged DLL next to check.dll) -->
+    <Compile Include="..\..\..\..\PZAMeitouUi\check\*.cs" Link="PzaMeitouUi\%(Filename)%(Extension)" />
     <Reference Include="PZAUiProbe"><HintPath>$(ModDll)</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 </Project>

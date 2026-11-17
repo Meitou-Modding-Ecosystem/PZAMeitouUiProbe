@@ -52,7 +52,7 @@ if ($Check) {
     $rt = Join-Path $here "out\checkrt"
     New-Item -ItemType Directory -Force $rt | Out-Null
     $patterns = "System*.dll", "Microsoft.*.dll", "mscorlib.dll", "netstandard.dll", "WindowsBase.dll", "coreclr.dll", "clrjit.dll",
-                "clrgc.dll", "hostfxr.dll", "hostpolicy.dll", "Meitou*.dll", "0Harmony.dll", "Bepu*.dll", "DotRecast*.dll"
+                "clrgc.dll", "hostfxr.dll", "hostpolicy.dll", "Meitou*.dll", "FreeTypeSharp.dll", "freetype.dll", "StbTrueTypeSharp.dll", "0Harmony.dll", "Bepu*.dll", "DotRecast*.dll"
     foreach ($p in $patterns) { Copy-Item (Join-Path $MeitouDir $p) $rt -Force }
     $stagedDll = Join-Path $stage "PZAUiProbe.dll"
     & dotnet build (Join-Path $here "tools\check\check.csproj") -c Release -nologo "-p:MeitouDir=$MeitouDir" "-p:ModDll=$stagedDll" -o (Join-Path $here "out\checkbin")
