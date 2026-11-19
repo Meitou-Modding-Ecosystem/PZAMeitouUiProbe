@@ -4,11 +4,9 @@ Keep existing development branches (including master); this change does not rena
 
 ## Reviews and protection
 
-Ordinary branches remain unprotected. Beta/main require PRs and applicable code-owner review, with only the configured review-rule exceptions; mandatory CI/safety remains separate and cannot be bypassed through that exception. GitHub cannot count an author's self-approval. The selected super-maintainers team has PR-only review bypass; beta may additionally have the configured GitHub Actions review exception. Do not infer ownership merely from team membership.
+The temporary organization policy requires a PR and one independent approval from `Meitou-Modding-Ecosystem/super-maintainers` on beta/main/release. The team requirement is native in the ruleset, so it does not depend on path-specific CODEOWNERS. Authors cannot approve themselves; no team/Actions review bypass is allowed. Existing build/security checks and force-push/deletion protection remain. Strict up-to-date status requirements are off to avoid reverse merges for history alone. Ordinary branches retain their existing behavior.
 
-The agreed native target for release is one independent approving reviewer who is an applicable CODEOWNER, with passing up-to-date CI, fresh review after changes, resolved conversations and no release bypass. Authors cannot approve their own PRs. This documentation does not apply that policy: the central reconciliation and release gate still expect two approving reviewers including an applicable CODEOWNER until a coordinated policy/gate rollout changes them. Follow the actual stronger requirement in GitHub; do not bypass it or relax the gate in isolation.
-
-CODEOWNERS uses the last matching pattern. List the personal maintainer alongside path-specific owners when they must both be eligible to review; a fallback owner is overridden by more specific entries.
+This interim policy excludes Husbandry, where the custom author-as-owner policy remains under test. CODEOWNERS still documents ownership but does not add an extra approval requirement here. Reconciliation and migration details: https://github.com/TheIvoryDisaster/GutenStructure/blob/main/docs/interim-review-policy.md .
 
 ## Packaging and promotion
 
