@@ -4,12 +4,14 @@
 #   .\build.ps1 -Check     also run tools\check: Meitou's own code-mod checks, the patches applied to the real MeitouClient.dll, and the window on a
 #                          REAL MyGuiScreenHost with Kenshi's own skins from the install (register, open, bind, arrange, press, drag, Escape),
 #                          on a copy of the .NET 11 runtime inside the Meitou release. It never starts the game; it reads the Kenshi install only.
+#   .\build.ps1 -Fuzz      also run the fuzz harness (tests\fuzz); -Check runs it too (2026-11-18)
 #   -MeitouDir <dir>       an unpacked Meitou release (default: MeitouDir in mod\local.props, git-ignored; see README "Build")
 #   -KenshiDir <dir>       the Kenshi install whose data\gui the check loads (default the Steam one)
 #
 # It installs nothing (README "Install"). out\ is git-ignored.
 param(
     [switch]$Check,
+    [switch]$Fuzz,
     [string]$MeitouDir = "",
     [string]$KenshiDir = "C:\Program Files (x86)\Steam\steamapps\common\Kenshi"
 )
@@ -64,4 +66,12 @@ if ($Check) {
     Push-Location $rt
     try { & dotnet exec --runtimeconfig check.runtimeconfig.json check.dll $stage $KenshiDir } finally { Pop-Location }
     if ($LASTEXITCODE -ne 0) { throw "check FAILED ($LASTEXITCODE)" }
+}
+
+# 2026-11-18: the fuzz harness (tests\fuzz, PZA's Meitou UI fuzz kit) on the same Meitou release: -Fuzz runs it, and so does every -Check
+# (a release also needs the mutation check, PZAMeitouUi\fuzz\mutate.py). It never starts the game.
+if ($Fuzz -or $Check) {
+    $fuzzRunner = Join-Path $here "..\..\PZAMeitouUi\fuzz\run_fuzz.ps1"
+    & powershell -NoProfile -ExecutionPolicy Bypass -File $fuzzRunner -Repo (Join-Path $here "..") -MeitouDir $MeitouDir
+    if ($LASTEXITCODE -ne 0) { throw "fuzz FAILED ($LASTEXITCODE): report in tests\out\fuzz\fuzz-report.txt" }
 }

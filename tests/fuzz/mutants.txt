@@ -1,0 +1,23 @@
+# PZA's UI Probe for Meitou: known bugs the fuzz harness must catch (PZAMeitouUi\fuzz\mutate.py). Author: PZA. One block per mutant, verbatim.
+# The probe's own code is a window; these plant bugs in the library it carries, to prove this harness runs the library's targets.
+# Header: ID | file from the folder that holds the repos | fuzz targets to run | what it plants
+
+@@ UP-keep-nan | PZAMeitouUi\src\PzaWindow.cs | settings.keep | a kept slider value that is not a finite number is put back
+<<<
+CultureInfo.InvariantCulture, out double d) && double.IsFinite(d) ? d : null,
+===
+CultureInfo.InvariantCulture, out double d) ? d : null,
+>>>
+
+@@ UP-str-ph | PZAMeitouUi\src\PzaStrings.cs | strings.load | a translation with other {n} placeholders than English used
+<<<
+            if (PlaceholderSet(val) != PlaceholderSet(english)) { refused.Add($"line {n + 1} {key} (placeholders differ from English)"); continue; }
+===
+>>>
+
+@@ UP-font-pair | PZAMeitouUi\src\PzaFont.cs | font.wrap | a lone surrogate half throws while measuring
+<<<
+i + 1 < line.Length && char.IsLowSurrogate(line[i + 1]) ? char.ConvertToUtf32
+===
+i + 1 < line.Length ? char.ConvertToUtf32
+>>>
