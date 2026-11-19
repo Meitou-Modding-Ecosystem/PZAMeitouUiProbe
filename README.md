@@ -1,6 +1,8 @@
 # PZA's UI Probe for Meitou
 
-Author: PZA. Licence: GPLv3 or later. A MeitouClient 0.20.1 test mod (`pza.uiprobe`, v0.3.0), not released on the Workshop. **Since 0.2.0 it is built on PZA's Meitou UI** (`..\PZAMeitouUi`, compiled in: clone both repos side by side): one in-game test proves the library. It proves that a code mod
+> **Version 0.3.3** (2026-11-19): built on PZA's Meitou UI 0.3.2 (`fbf46db`), so its window works on Meitou 0.21 and newer (list rows and text fit through the running Meitou's own constructor and overload); loads on Meitou 0.20.1 and newer, no upper cap. Not released.
+
+Author: PZA. Licence: GPLv3 or later. A MeitouClient 0.20.1 test mod (`pza.uiprobe`, v0.3.3), not released on the Workshop. **Since 0.2.0 it is built on PZA's Meitou UI** (`..\PZAMeitouUi`, compiled in: clone both repos side by side): one in-game test proves the library. It proves that a code mod
 can run a real Kenshi (MyGUI) window on Meitou's own window engine (`MyGuiScreenHost`), the route the PZA mods' Meitou windows will take.
 
 ## Open it
