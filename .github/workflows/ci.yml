@@ -1,9 +1,17 @@
 name: CI
-on:
+'on':
   pull_request:
-    branches: [master, beta, main, release]
+    branches:
+    - master
+    - beta
+    - main
+    - release
   push:
-    branches: [master, beta, main, release]
+    branches:
+    - master
+    - beta
+    - main
+    - release
 permissions:
   contents: read
 concurrency:
@@ -12,20 +20,34 @@ concurrency:
 jobs:
   compatibility:
     uses: TheIvoryDisaster/GutenStructure/.github/workflows/build-ui.yml@fc0507fb376b8b8ba732795c7032c9cd81464a58
-  release-readiness:
-    name: Release readiness
+  development-readiness:
+    name: Development readiness
     if: always()
-    needs: [compatibility]
+    needs:
+    - compatibility
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Require all prerequisite checks
-        env:
-          RESULTS: ${{ join(needs.*.result, ',') }}
-        run: |
-          python - <<'PYCODE'
-          import os
-          results = os.environ['RESULTS'].split(',')
-          if not results or any(result != 'success' for result in results):
-              raise SystemExit('A required check failed, was cancelled, or was skipped')
-          PYCODE
+    - name: Require prerequisite checks
+      env:
+        RESULTS: ${{ toJSON(needs) }}
+        TARGET: ${{ github.base_ref || github.ref_name }}
+      run: "python - <<'PYCODE'\nimport json, os\nresults = json.loads(os.environ['RESULTS'])\nrequired = list(results)\n\
+        if not required or any(results[key]['result'] != 'success' for key in required):\n    raise SystemExit('A prerequisite\
+        \ failed, was cancelled, or was skipped')\nPYCODE\n"
+  release-readiness:
+    name: Release readiness
+    if: always()
+    needs:
+    - development-readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Require prerequisite checks
+      env:
+        RESULTS: ${{ toJSON(needs) }}
+        TARGET: ${{ github.base_ref || github.ref_name }}
+      run: "python - <<'PYCODE'\nimport json, os\nresults = json.loads(os.environ['RESULTS'])\ntarget = os.environ['TARGET']\n\
+        required = list(results) if target == 'release' else ['development-readiness']\nif not required or any(results[key]['result']\
+        \ != 'success' for key in required):\n    raise SystemExit('A prerequisite failed, was cancelled, or was skipped')\n\
+        PYCODE\n"
